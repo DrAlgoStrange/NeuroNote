@@ -1,198 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Inkwell — Notes</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <style>
-  :root {
-    --bg:#0d0d0f;--surface:#141417;--panel:#1a1a1f;--border:#2a2a32;
-    --accent:#c9a96e;--accent2:#7c6fff;--text:#e8e8ec;--muted:#6b6b7a;
-    --danger:#ff6b6b;--success:#6bffb8;--warn:#ffc46b;
-    --sidebar:280px;--transition:0.25s cubic-bezier(.4,0,.2,1);
-  }
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overflow:hidden}
-  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+:root{
+  --bg:#0d0d0f;--surface:#141417;--panel:#1a1a1f;--border:#2a2a32;
+  --accent:#c9a96e;--accent2:#7c6fff;--text:#e8e8ec;--muted:#6b6b7a;
+  --danger:#ff6b6b;--success:#6bffb8;--warn:#ffc46b;
+  --sidebar:280px;--tr:0.25s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overflow:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
 
-  #app{display:flex;height:100vh;overflow:hidden}
+/* ══ LOCK SCREEN ══════════════════════════════════════════ */
+#lock-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:0;
+  animation:fadeIn .4s ease;
+}
+#lock-screen.hidden{display:none}
+.lock-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:24px;padding:40px 36px;width:100%;max-width:400px;
+  display:flex;flex-direction:column;gap:20px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6);
+  animation:scaleIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+.lock-logo{font-family:'Playfair Display',serif;font-size:28px;color:var(--accent);display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.lock-logo-dot{width:10px;height:10px;background:var(--accent);border-radius:50%;box-shadow:0 0 12px var(--accent)}
+.lock-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-top:-8px}
+.lock-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px}
+.lock-input-wrap{position:relative;display:flex;align-items:center}
+.lock-input{
+  width:100%;background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:13px 44px 13px 16px;
+  color:var(--text);font-family:'DM Mono',monospace;font-size:15px;
+  outline:none;transition:border-color var(--tr),box-shadow var(--tr);
+  letter-spacing:2px;
+}
+.lock-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,169,110,.12)}
+.lock-input.err{border-color:var(--danger);animation:shake .35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.eye-btn{position:absolute;right:12px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;transition:color var(--tr)}
+.eye-btn:hover{color:var(--text)}
+.lock-hint{font-size:12px;color:var(--muted);margin-top:-8px;font-style:italic}
+.lock-btn{
+  background:var(--accent);color:var(--bg);border:none;
+  border-radius:14px;padding:14px;font-family:inherit;font-size:15px;
+  font-weight:600;cursor:pointer;letter-spacing:.3px;
+  transition:filter var(--tr),transform var(--tr);
+}
+.lock-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.lock-btn:active{transform:translateY(0)}
+.lock-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.lock-or{text-align:center;font-size:12px;color:var(--muted)}
+.lock-new{
+  background:none;border:1.5px dashed var(--border);border-radius:14px;
+  padding:11px;font-family:inherit;font-size:13px;color:var(--muted);
+  cursor:pointer;transition:all var(--tr);
+}
+.lock-new:hover{border-color:var(--muted);color:var(--text);background:var(--panel)}
+.lock-security-badge{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:rgba(107,255,184,.06);border:1px solid rgba(107,255,184,.15);
+  border-radius:10px;font-size:11.5px;color:var(--success);line-height:1.5;
+}
+.lock-security-badge .shield{font-size:16px;flex-shrink:0}
+.lock-err-msg{font-size:12.5px;color:var(--danger);text-align:center;min-height:18px;transition:opacity var(--tr)}
 
-  /* SIDEBAR */
-  #sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform var(--transition);z-index:100}
-  .sidebar-header{padding:24px 20px 16px;border-bottom:1px solid var(--border)}
-  .logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--accent);letter-spacing:.5px;display:flex;align-items:center;gap:10px}
-  .logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent)}
-  .sync-status{font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
-  .sync-status:hover{color:var(--text)}
-  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background var(--transition),box-shadow var(--transition);flex-shrink:0}
-  .sync-dot.syncing{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1s infinite}
-  .sync-dot.ok{background:var(--success);box-shadow:0 0 6px var(--success)}
-  .sync-dot.err{background:var(--danger);box-shadow:0 0 6px var(--danger)}
-  .sync-dot.warn{background:var(--warn);box-shadow:0 0 6px var(--warn)}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* ══ AUTO-LOCK INDICATOR ═══════════════════════════════════ */
+#lock-indicator{
+  position:fixed;top:14px;right:14px;z-index:500;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:6px 12px;font-size:11px;color:var(--muted);
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  transition:all var(--tr);user-select:none;
+}
+#lock-indicator:hover{background:var(--panel);color:var(--text)}
+#lock-indicator .shield-sm{font-size:13px}
+#lock-timer-bar{
+  position:fixed;bottom:0;left:0;height:2px;
+  background:var(--accent);opacity:.4;
+  transition:width 1s linear;
+  pointer-events:none;
+}
 
-  .notebooks-section{flex:1;overflow-y:auto;padding:12px 0}
-  .section-label{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 20px 6px}
-  .notebook-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:2px 8px;border-radius:12px;cursor:pointer;transition:background var(--transition);user-select:none}
-  .notebook-item:hover{background:var(--panel)}
-  .notebook-item.active{background:rgba(201,169,110,.12)}
-  .notebook-item.active .nb-icon{color:var(--accent)}
-  .nb-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0;transition:transform var(--transition)}
-  .notebook-item:hover .nb-icon{transform:scale(1.15)}
-  .nb-info{flex:1;min-width:0}
-  .nb-name{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nb-count{font-size:11px;color:var(--muted);margin-top:1px}
-  .nb-del{opacity:0;background:none;border:none;color:var(--danger);cursor:pointer;padding:4px;border-radius:8px;font-size:14px;transition:opacity var(--transition);flex-shrink:0}
-  .notebook-item:hover .nb-del{opacity:1}
-  .nb-del:hover{background:rgba(255,107,107,.15)}
-  .add-notebook-btn{display:flex;align-items:center;gap:8px;padding:10px 16px;margin:4px 8px;border-radius:12px;cursor:pointer;color:var(--muted);font-size:13px;transition:all var(--transition);border:1.5px dashed var(--border)}
-  .add-notebook-btn:hover{background:var(--panel);color:var(--text);border-color:var(--muted)}
-  .sidebar-footer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px}
-  .icon-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:12px;border:none;background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--transition)}
-  .icon-btn:hover{background:var(--border);color:var(--text)}
-  .icon-btn.accent{color:var(--accent)}
+/* ══ MAIN APP ══════════════════════════════════════════════ */
+#app{display:flex;height:100vh;overflow:hidden;opacity:0;transition:opacity .3s ease}
+#app.visible{opacity:1}
 
-  /* NOTES PANEL */
-  #notes-panel{width:260px;min-width:260px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column}
-  .notes-panel-header{padding:20px 16px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
-  .notes-panel-title{font-family:'Playfair Display',serif;font-size:18px;display:flex;align-items:center;justify-content:space-between}
-  .search-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px;transition:border-color var(--transition)}
-  .search-bar:focus-within{border-color:var(--accent)}
-  .search-bar input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:13px;flex:1;min-width:0}
-  .search-bar input::placeholder{color:var(--muted)}
-  .notes-list{flex:1;overflow-y:auto;padding:8px}
-  .note-card{padding:12px 14px;border-radius:12px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background var(--transition),border-color var(--transition);animation:fadeUp .2s ease both}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .note-card:hover{background:var(--surface)}
-  .note-card.active{background:rgba(201,169,110,.1);border-color:rgba(201,169,110,.3)}
-  .note-card-title{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
-  .note-card-preview{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .note-card-date{font-size:10.5px;color:var(--muted);margin-top:6px;opacity:.7}
-  .new-note-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px;padding:10px;border-radius:12px;border:1.5px dashed var(--border);background:none;color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--transition)}
-  .new-note-btn:hover{background:var(--surface);color:var(--accent);border-color:var(--accent)}
+/* SIDEBAR */
+#sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform var(--tr);z-index:100}
+.sidebar-header{padding:24px 20px 16px;border-bottom:1px solid var(--border)}
+.logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--accent);letter-spacing:.5px;display:flex;align-items:center;gap:10px}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent)}
+.sync-status{font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.sync-status:hover{color:var(--text)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background var(--tr),box-shadow var(--tr);flex-shrink:0}
+.sync-dot.syncing{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1s infinite}
+.sync-dot.ok{background:var(--success);box-shadow:0 0 6px var(--success)}
+.sync-dot.err{background:var(--danger);box-shadow:0 0 6px var(--danger)}
+.sync-dot.warn{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.notebooks-section{flex:1;overflow-y:auto;padding:12px 0}
+.section-label{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 20px 6px}
+.notebook-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:2px 8px;border-radius:12px;cursor:pointer;transition:background var(--tr);user-select:none}
+.notebook-item:hover{background:var(--panel)}
+.notebook-item.active{background:rgba(201,169,110,.12)}
+.nb-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0;transition:transform var(--tr)}
+.notebook-item:hover .nb-icon{transform:scale(1.15)}
+.nb-info{flex:1;min-width:0}
+.nb-count{font-size:11px;color:var(--muted);margin-top:1px}
+.nb-del{opacity:0;background:none;border:none;color:var(--danger);cursor:pointer;padding:4px;border-radius:8px;font-size:14px;transition:opacity var(--tr);flex-shrink:0}
+.notebook-item:hover .nb-del{opacity:1}
+.nb-del:hover{background:rgba(255,107,107,.15)}
+.add-notebook-btn{display:flex;align-items:center;gap:8px;padding:10px 16px;margin:4px 8px;border-radius:12px;cursor:pointer;color:var(--muted);font-size:13px;transition:all var(--tr);border:1.5px dashed var(--border)}
+.add-notebook-btn:hover{background:var(--panel);color:var(--text);border-color:var(--muted)}
+.sidebar-footer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px}
+.icon-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:12px;border:none;background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--tr)}
+.icon-btn:hover{background:var(--border);color:var(--text)}
+.icon-btn.accent{color:var(--accent)}
+.icon-btn.lock-btn-sm{color:var(--warn)}
 
-  /* EDITOR */
-  #editor-area{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
-  .editor-toolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .editor-title{flex:1;background:none;border:none;outline:none;font-family:'Playfair Display',serif;font-size:20px;color:var(--text);min-width:0}
-  .editor-title::placeholder{color:var(--border)}
-  .toolbar-actions{display:flex;align-items:center;gap:6px}
-  .tb-btn{padding:7px 10px;border-radius:10px;border:none;background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;gap:5px;transition:background var(--transition),color var(--transition);white-space:nowrap}
-  .tb-btn:hover{background:var(--border);color:var(--text)}
-  .tb-btn.active{background:rgba(201,169,110,.2);color:var(--accent)}
-  .tb-btn.danger:hover{background:rgba(255,107,107,.15);color:var(--danger)}
-  .editor-body{flex:1;display:flex;overflow:hidden}
-  #md-editor{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.8;padding:28px 36px;resize:none;overflow-y:auto}
-  #md-editor::placeholder{color:var(--border)}
-  #md-preview{flex:1;padding:28px 36px;overflow-y:auto;display:none}
-  #md-preview.visible{display:block;animation:fadeIn .2s ease}
-  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  .md-content h1,.md-content h2,.md-content h3{font-family:'Playfair Display',serif;margin:1.4em 0 .5em;line-height:1.2}
-  .md-content h1{font-size:2em;color:var(--accent)}
-  .md-content h2{font-size:1.5em;border-bottom:1px solid var(--border);padding-bottom:6px}
-  .md-content h3{font-size:1.2em}
-  .md-content p{margin:.7em 0;line-height:1.8}
-  .md-content ul,.md-content ol{margin:.6em 0 .6em 1.6em}
-  .md-content li{margin:.3em 0;line-height:1.7}
-  .md-content code{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:.85em;color:var(--accent)}
-  .md-content pre{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;overflow-x:auto;margin:1em 0}
-  .md-content pre code{background:none;border:none;padding:0;color:var(--text)}
-  .md-content blockquote{border-left:3px solid var(--accent);margin:1em 0;padding:6px 0 6px 16px;color:var(--muted);font-style:italic}
-  .md-content a{color:var(--accent2)}
-  .md-content img{max-width:100%;border-radius:10px;margin:.8em 0}
-  .md-content table{width:100%;border-collapse:collapse;margin:1em 0;font-size:13.5px}
-  .md-content th{background:var(--panel);padding:8px 12px;border:1px solid var(--border);text-align:left}
-  .md-content td{padding:8px 12px;border:1px solid var(--border)}
-  .md-content tr:nth-child(even) td{background:rgba(255,255,255,.02)}
-  .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:12px;text-align:center;padding:40px}
-  .empty-icon{font-size:48px;opacity:.3}
-  .empty-title{font-family:'Playfair Display',serif;font-size:18px;opacity:.5}
-  .empty-sub{font-size:13px;opacity:.4;max-width:240px;line-height:1.6}
-  .wc-bar{padding:8px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;gap:16px}
-  .divider{width:1px;height:20px;background:var(--border);flex-shrink:0}
+/* NOTES PANEL */
+#notes-panel{width:260px;min-width:260px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.notes-panel-header{padding:20px 16px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.notes-panel-title{font-family:'Playfair Display',serif;font-size:18px;display:flex;align-items:center;justify-content:space-between}
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px;transition:border-color var(--tr)}
+.search-bar:focus-within{border-color:var(--accent)}
+.search-bar input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:13px;flex:1;min-width:0}
+.search-bar input::placeholder{color:var(--muted)}
+.notes-list{flex:1;overflow-y:auto;padding:8px}
+.note-card{padding:12px 14px;border-radius:12px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background var(--tr),border-color var(--tr);animation:fadeUp .2s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.note-card:hover{background:var(--surface)}
+.note-card.active{background:rgba(201,169,110,.1);border-color:rgba(201,169,110,.3)}
+.note-card-title{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.note-card-preview{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-card-date{font-size:10.5px;color:var(--muted);margin-top:6px;opacity:.7}
+.new-note-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px;padding:10px;border-radius:12px;border:1.5px dashed var(--border);background:none;color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--tr)}
+.new-note-btn:hover{background:var(--surface);color:var(--accent);border-color:var(--accent)}
 
-  /* SETTINGS MODAL */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
-  .modal-overlay.hidden{display:none}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;display:flex;flex-direction:column;overflow:hidden;max-height:90vh;animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)}
-  @keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
-  .modal-header{padding:22px 24px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-  .modal-title{font-family:'Playfair Display',serif;font-size:19px}
-  .modal-body{overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
-  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+/* EDITOR */
+#editor-area{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.editor-toolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.editor-title{flex:1;background:none;border:none;outline:none;font-family:'Playfair Display',serif;font-size:20px;color:var(--text);min-width:0}
+.editor-title::placeholder{color:var(--border)}
+.toolbar-actions{display:flex;align-items:center;gap:6px}
+.tb-btn{padding:7px 10px;border-radius:10px;border:none;background:var(--panel);color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;gap:5px;transition:background var(--tr),color var(--tr);white-space:nowrap}
+.tb-btn:hover{background:var(--border);color:var(--text)}
+.tb-btn.active{background:rgba(201,169,110,.2);color:var(--accent)}
+.tb-btn.danger:hover{background:rgba(255,107,107,.15);color:var(--danger)}
+.editor-body{flex:1;display:flex;overflow:hidden}
+#md-editor{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.8;padding:28px 36px;resize:none;overflow-y:auto}
+#md-editor::placeholder{color:var(--border)}
+#md-preview{flex:1;padding:28px 36px;overflow-y:auto;display:none}
+#md-preview.visible{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.md-content h1,.md-content h2,.md-content h3{font-family:'Playfair Display',serif;margin:1.4em 0 .5em;line-height:1.2}
+.md-content h1{font-size:2em;color:var(--accent)}
+.md-content h2{font-size:1.5em;border-bottom:1px solid var(--border);padding-bottom:6px}
+.md-content h3{font-size:1.2em}
+.md-content p{margin:.7em 0;line-height:1.8}
+.md-content ul,.md-content ol{margin:.6em 0 .6em 1.6em}
+.md-content li{margin:.3em 0;line-height:1.7}
+.md-content code{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:.85em;color:var(--accent)}
+.md-content pre{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;overflow-x:auto;margin:1em 0}
+.md-content pre code{background:none;border:none;padding:0;color:var(--text)}
+.md-content blockquote{border-left:3px solid var(--accent);margin:1em 0;padding:6px 0 6px 16px;color:var(--muted);font-style:italic}
+.md-content a{color:var(--accent2)}
+.md-content img{max-width:100%;border-radius:10px;margin:.8em 0}
+.md-content table{width:100%;border-collapse:collapse;margin:1em 0;font-size:13.5px}
+.md-content th{background:var(--panel);padding:8px 12px;border:1px solid var(--border);text-align:left}
+.md-content td{padding:8px 12px;border:1px solid var(--border)}
+.md-content tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:12px;text-align:center;padding:40px}
+.empty-icon{font-size:48px;opacity:.3}
+.empty-title{font-family:'Playfair Display',serif;font-size:18px;opacity:.5}
+.empty-sub{font-size:13px;opacity:.4;max-width:240px;line-height:1.6}
+.wc-bar{padding:8px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;gap:16px;align-items:center}
+.divider{width:1px;height:20px;background:var(--border);flex-shrink:0}
 
-  .form-group{display:flex;flex-direction:column;gap:6px}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .form-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
-  .form-input{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;width:100%;transition:border-color var(--transition)}
-  .form-input:focus{border-color:var(--accent)}
-  .form-input::placeholder{color:var(--muted)}
-  .form-hint{font-size:11.5px;color:var(--muted);line-height:1.6}
-  .form-hint a{color:var(--accent2);text-decoration:none}
-  .form-hint a:hover{text-decoration:underline}
-  .token-row{display:flex;gap:8px}
-  .token-row .form-input{flex:1}
-  .test-btn{padding:0 16px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;font-family:inherit;font-size:12.5px;white-space:nowrap;transition:all var(--transition);font-weight:500}
-  .test-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* SETTINGS MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;display:flex;flex-direction:column;overflow:hidden;max-height:90vh;animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.modal-header{padding:22px 24px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-family:'Playfair Display',serif;font-size:19px}
+.modal-body{overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.form-input{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;width:100%;transition:border-color var(--tr)}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--muted)}
+.form-hint{font-size:11.5px;color:var(--muted);line-height:1.6}
+.form-hint a{color:var(--accent2);text-decoration:none}
+.form-hint a:hover{text-decoration:underline}
+.token-row{display:flex;gap:8px}
+.token-row .form-input{flex:1}
+.test-btn{padding:0 16px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;font-family:inherit;font-size:12.5px;white-space:nowrap;transition:all var(--tr);font-weight:500}
+.test-btn:hover{border-color:var(--accent);color:var(--accent)}
+.setup-steps{background:var(--panel);border-radius:14px;padding:14px 16px;border:1px solid var(--border)}
+.setup-steps-title{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
+.setup-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.setup-step:last-child{margin-bottom:0}
+.step-num{background:rgba(201,169,110,.15);color:var(--accent);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.setup-step a{color:var(--accent2);text-decoration:none}
+.setup-step a:hover{text-decoration:underline}
+.setup-step strong{color:var(--text)}
+#token-test-result{border-radius:10px;padding:11px 14px;font-size:12.5px;line-height:1.6;display:none;animation:fadeIn .2s ease}
+#token-test-result.ok{background:rgba(107,255,184,.07);border:1px solid rgba(107,255,184,.25);color:var(--success)}
+#token-test-result.err{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:var(--danger)}
+#token-test-result.warn{background:rgba(255,196,107,.07);border:1px solid rgba(255,196,107,.25);color:var(--warn)}
+.enc-badge{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(124,111,255,.07);border:1px solid rgba(124,111,255,.2);border-radius:10px;font-size:11.5px;color:var(--accent2);line-height:1.5}
+.enc-badge .icon{font-size:16px;flex-shrink:0}
+.btn{padding:10px 20px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:500;transition:all var(--tr)}
+.btn-ghost{background:var(--panel);color:var(--muted)}
+.btn-ghost:hover{background:var(--border);color:var(--text)}
+.btn-accent{background:var(--accent);color:var(--bg)}
+.btn-accent:hover{filter:brightness(1.1);transform:translateY(-1px)}
 
-  /* Setup steps */
-  .setup-steps{background:var(--panel);border-radius:14px;padding:14px 16px;border:1px solid var(--border)}
-  .setup-steps-title{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
-  .setup-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;font-size:12.5px;line-height:1.5;color:var(--muted)}
-  .setup-step:last-child{margin-bottom:0}
-  .step-num{background:rgba(201,169,110,.15);color:var(--accent);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
-  .setup-step a{color:var(--accent2);text-decoration:none}
-  .setup-step a:hover{text-decoration:underline}
-  .setup-step strong{color:var(--text)}
+/* TOAST */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;display:flex;align-items:flex-start;gap:10px;animation:slideUp .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:340px;transition:opacity .3s,transform .3s;line-height:1.5}
+.toast.ok{border-color:rgba(107,255,184,.3)}
+.toast.err{border-color:rgba(255,107,107,.3)}
+.toast.info{border-color:rgba(201,169,110,.3)}
+.toast.warn{border-color:rgba(255,196,107,.3)}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
-  /* Token test result */
-  #token-test-result{border-radius:10px;padding:11px 14px;font-size:12.5px;line-height:1.6;display:none;animation:fadeIn .2s ease}
-  #token-test-result.ok{background:rgba(107,255,184,.07);border:1px solid rgba(107,255,184,.25);color:var(--success)}
-  #token-test-result.err{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:var(--danger)}
-  #token-test-result.warn{background:rgba(255,196,107,.07);border:1px solid rgba(255,196,107,.25);color:var(--warn)}
-
-  .btn{padding:10px 20px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:500;transition:all var(--transition)}
-  .btn-ghost{background:var(--panel);color:var(--muted)}
-  .btn-ghost:hover{background:var(--border);color:var(--text)}
-  .btn-accent{background:var(--accent);color:var(--bg)}
-  .btn-accent:hover{filter:brightness(1.1);transform:translateY(-1px)}
-
-  /* TOAST */
-  #toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-  .toast{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;display:flex;align-items:flex-start;gap:10px;animation:slideUp .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:340px;transition:opacity .3s,transform .3s;line-height:1.5}
-  .toast.ok{border-color:rgba(107,255,184,.3)}
-  .toast.err{border-color:rgba(255,107,107,.3)}
-  .toast.info{border-color:rgba(201,169,110,.3)}
-  .toast.warn{border-color:rgba(255,196,107,.3)}
-  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-
-  /* MOBILE */
-  #menu-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 10px;cursor:pointer;font-size:18px;color:var(--text)}
-  #overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
-  .nb-name-input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:500;width:100%;caret-color:var(--accent)}
-
-  @media(max-width:768px){
-    #menu-toggle{display:flex}
-    #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
-    #sidebar.open{transform:none}
-    #overlay.open{display:block}
-    #notes-panel{min-width:0;width:100%}
-    #notes-panel.hidden-mobile{display:none}
-    #editor-area.hidden-mobile{display:none}
-    #editor-area{width:100%}
-    #md-editor,#md-preview{padding:20px 18px}
-    .form-row{grid-template-columns:1fr}
-  }
+/* MOBILE */
+#menu-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 10px;cursor:pointer;font-size:18px;color:var(--text)}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+.nb-name-input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:500;width:100%;caret-color:var(--accent)}
+@media(max-width:768px){
+  #menu-toggle{display:flex}
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
+  #sidebar.open{transform:none}
+  #overlay.open{display:block}
+  #notes-panel{min-width:0;width:100%}
+  #notes-panel.hidden-mobile{display:none}
+  #editor-area.hidden-mobile{display:none}
+  #editor-area{width:100%}
+  #md-editor,#md-preview{padding:20px 18px}
+  .form-row{grid-template-columns:1fr}
+  #lock-indicator{display:none}
+}
 </style>
 </head>
 <body>
+
+<!-- ══ LOCK SCREEN ══════════════════════════════════════════════ -->
+<div id="lock-screen">
+  <div class="lock-card">
+    <div>
+      <div class="lock-logo"><div class="lock-logo-dot"></div>Inkwell</div>
+      <div class="lock-sub" id="lock-sub-text">Enter your passphrase to unlock your notes.</div>
+    </div>
+
+    <div class="lock-security-badge">
+      <span class="shield">🔒</span>
+      <span>Your GitHub token is encrypted with <strong>AES-256-GCM</strong> using a key derived from your passphrase via PBKDF2 (600,000 iterations). The plaintext token is never stored anywhere on disk.</span>
+    </div>
+
+    <div>
+      <div class="lock-label" id="lock-field-label">Passphrase</div>
+      <div class="lock-input-wrap">
+        <input id="lock-input" class="lock-input" type="password"
+          placeholder="Enter passphrase…"
+          onkeydown="if(event.key==='Enter')handleLockSubmit()"
+          oninput="clearLockErr()" autocomplete="current-password"/>
+        <button class="eye-btn" onclick="toggleLockEye()" id="lock-eye">👁</button>
+      </div>
+      <div class="lock-hint" id="lock-hint-display"></div>
+    </div>
+
+    <!-- Hint field (only shown on first-time setup) -->
+    <div id="hint-field-wrap" style="display:none">
+      <div class="lock-label">Passphrase Hint <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(optional, stored unencrypted)</span></div>
+      <input id="lock-hint-input" class="lock-input" type="text"
+        placeholder="e.g. 'My childhood street + birth year'" style="letter-spacing:0"/>
+    </div>
+
+    <div class="lock-err-msg" id="lock-err"></div>
+
+    <button class="lock-btn" id="lock-submit-btn" onclick="handleLockSubmit()">Unlock</button>
+    <div class="lock-or" id="lock-or-divider">— or —</div>
+    <button class="lock-new" id="lock-alt-btn" onclick="handleLockAlt()">First time? Set a new passphrase</button>
+  </div>
+</div>
+
+<!-- ══ AUTO-LOCK INDICATOR ══════════════════════════════════════ -->
+<div id="lock-indicator" onclick="lockApp()" title="Click to lock now">
+  <span class="shield-sm">🔒</span>
+  <span id="lock-timer-text">Locks in 5:00</span>
+</div>
+<div id="lock-timer-bar" style="width:100%"></div>
+
+<!-- ══ MOBILE ═════════════════════════════════════════════════ -->
 <div id="overlay" onclick="closeSidebar()"></div>
 <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
 
+<!-- ══ MAIN APP ══════════════════════════════════════════════ -->
 <div id="app">
-  <!-- Sidebar -->
   <nav id="sidebar">
     <div class="sidebar-header">
       <div class="logo"><div class="logo-dot"></div>Inkwell</div>
@@ -208,11 +328,11 @@
     </div>
     <div class="sidebar-footer">
       <button class="icon-btn accent" onclick="manualSync()"><span>↻</span> Sync</button>
+      <button class="icon-btn lock-btn-sm" onclick="lockApp()" title="Lock now">🔒 Lock</button>
       <button class="icon-btn" onclick="openSettings()">⚙ Config</button>
     </div>
   </nav>
 
-  <!-- Notes panel -->
   <div id="notes-panel">
     <div class="notes-panel-header">
       <div class="notes-panel-title">
@@ -221,23 +341,22 @@
       </div>
       <div class="search-bar">
         <span style="color:var(--muted);font-size:13px;">⌕</span>
-        <input id="search-input" type="text" placeholder="Search notes…" oninput="renderNotesList()" />
+        <input id="search-input" type="text" placeholder="Search notes…" oninput="renderNotesList()"/>
       </div>
     </div>
     <div class="notes-list" id="notes-list"></div>
     <button class="new-note-btn" onclick="createNote()">＋ New note</button>
   </div>
 
-  <!-- Editor -->
   <div id="editor-area">
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">📓</div>
       <div class="empty-title">Nothing selected</div>
-      <div class="empty-sub">Pick a notebook and a note to start writing, or create a new one.</div>
+      <div class="empty-sub">Pick a notebook and a note to start writing.</div>
     </div>
     <div id="editor-wrap" style="display:none;flex:1;flex-direction:column;height:100%">
       <div class="editor-toolbar">
-        <input id="note-title" class="editor-title" type="text" placeholder="Untitled note…" oninput="onTitleChange()" />
+        <input id="note-title" class="editor-title" type="text" placeholder="Untitled note…" oninput="onTitleChange()"/>
         <div class="toolbar-actions">
           <button class="tb-btn" id="preview-btn" onclick="togglePreview()">◫ Preview</button>
           <div class="divider"></div>
@@ -251,13 +370,16 @@
         </div>
       </div>
       <div class="editor-body">
-        <textarea id="md-editor" placeholder="Start writing in Markdown…&#10;&#10;Paste from your PC — it syncs to all your devices automatically." oninput="onContentChange()"></textarea>
+        <textarea id="md-editor" placeholder="Start writing in Markdown…" oninput="onContentChange()"></textarea>
         <div id="md-preview" class="md-content"></div>
       </div>
       <div class="wc-bar">
         <span id="wc-words">0 words</span>
         <span id="wc-chars">0 chars</span>
-        <span id="save-status" style="margin-left:auto;color:var(--accent)"></span>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--accent2);opacity:.6">🔒 AES-256</span>
+          <span id="save-status" style="color:var(--accent)"></span>
+        </span>
       </div>
     </div>
   </div>
@@ -270,58 +392,47 @@
       <div class="modal-title">⚙ GitHub Sync Setup</div>
       <button class="tb-btn" onclick="closeSettings()" style="font-size:16px;">✕</button>
     </div>
-
     <div class="modal-body">
+      <div class="enc-badge">
+        <span class="icon">🔐</span>
+        <span>Your token will be <strong>AES-256-GCM encrypted</strong> before being stored. GitHub username, repo, and branch are stored in plaintext (they're not secrets). Token plaintext exists only in memory while the app is unlocked.</span>
+      </div>
       <div class="setup-steps">
         <div class="setup-steps-title">One-time setup</div>
-        <div class="setup-step">
-          <div class="step-num">1</div>
-          <span>Create a GitHub repo (e.g. <code style="font-size:11.5px;color:var(--accent)">my-notes</code>). Upload <code style="font-size:11.5px;color:var(--accent)">index.html</code> and <code style="font-size:11.5px;color:var(--accent)">notes.json</code> to it, then enable GitHub Pages.</span>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">2</div>
-          <span>Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → select <strong>Classic</strong> → check the <strong>repo</strong> box (all sub-boxes) → Generate token → copy it.</span>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">3</div>
-          <span>Fill in the fields below and hit <strong>Test Token</strong> first to confirm it works, then <strong>Save &amp; Sync</strong>.</span>
-        </div>
+        <div class="setup-step"><div class="step-num">1</div><span>Create a GitHub repo, upload <code style="font-size:11.5px;color:var(--accent)">index.html</code> and <code style="font-size:11.5px;color:var(--accent)">notes.json</code>, enable GitHub Pages.</span></div>
+        <div class="setup-step"><div class="step-num">2</div><span>Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → <strong>Classic</strong> → check the full <strong>repo</strong> scope → Generate &amp; copy.</span></div>
+        <div class="setup-step"><div class="step-num">3</div><span>Fill in the fields, click <strong>Test Token</strong>, then <strong>Save &amp; Sync</strong>.</span></div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">GitHub Username</label>
-          <input class="form-input" id="cfg-user" type="text" placeholder="your-username" autocomplete="off" spellcheck="false" />
+          <input class="form-input" id="cfg-user" type="text" placeholder="your-username" autocomplete="off" spellcheck="false"/>
         </div>
         <div class="form-group">
           <label class="form-label">Repository Name</label>
-          <input class="form-input" id="cfg-repo" type="text" placeholder="my-notes" autocomplete="off" spellcheck="false" />
+          <input class="form-input" id="cfg-repo" type="text" placeholder="my-notes" autocomplete="off" spellcheck="false"/>
         </div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Branch</label>
-          <input class="form-input" id="cfg-branch" type="text" placeholder="main" />
+          <input class="form-input" id="cfg-branch" type="text" placeholder="main"/>
         </div>
         <div class="form-group">
           <label class="form-label">File Path</label>
-          <input class="form-input" id="cfg-path" type="text" placeholder="notes.json" />
+          <input class="form-input" id="cfg-path" type="text" placeholder="notes.json"/>
         </div>
       </div>
-
       <div class="form-group">
-        <label class="form-label">Personal Access Token — Classic, <em>repo</em> scope required</label>
+        <label class="form-label">Personal Access Token (classic · repo scope)</label>
         <div class="token-row">
-          <input class="form-input" id="cfg-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+          <input class="form-input" id="cfg-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
           <button class="test-btn" onclick="testToken()">Test →</button>
         </div>
-        <div class="form-hint">Saved only in your browser. Only sent to <code style="font-size:11px">api.github.com</code>.</div>
+        <div class="form-hint">Encrypted with your passphrase before storage. Never saved in plaintext.</div>
       </div>
-
       <div id="token-test-result"></div>
     </div>
-
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
       <button class="btn btn-accent" onclick="saveSettings()">Save &amp; Sync</button>
@@ -332,125 +443,400 @@
 <div id="toast-container"></div>
 
 <script>
-// ── STATE ──────────────────────────────────────────────
-let db = {notebooks:[],notes:[]};
-let cfg = {};
-let currentNotebook = null, currentNote = null;
-let saveTimer = null, previewMode = false, ghFileSha = null;
-const isMobile = () => window.innerWidth <= 768;
+'use strict';
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  CRYPTO ENGINE — AES-256-GCM + PBKDF2                       ║
+// ╚══════════════════════════════════════════════════════════════╝
 
-// ── BOOT ───────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async () => {
-  loadConfig(); loadLocalDB();
-  renderNotebooks(); renderNotesList();
+const PBKDF2_ITERS = 600_000;
+const PBKDF2_HASH  = 'SHA-256';
+const SALT_LEN     = 16; // bytes
+const IV_LEN       = 12; // bytes (GCM standard)
 
-  // Mobile back button
-  const toolbar = document.querySelector('.editor-toolbar');
-  const backBtn = document.createElement('button');
-  backBtn.className='tb-btn'; backBtn.id='back-mobile'; backBtn.innerHTML='‹';
-  backBtn.onclick = () => {
-    document.getElementById('notes-panel').classList.remove('hidden-mobile');
-    document.getElementById('editor-area').classList.add('hidden-mobile');
-  };
-  toolbar.prepend(backBtn);
-  const checkMobile = () => { backBtn.style.display = isMobile()?'':'none'; };
-  window.addEventListener('resize', checkMobile); checkMobile();
+// Derive a CryptoKey from a passphrase + salt using PBKDF2
+async function deriveKey(passphrase, salt) {
+  const enc      = new TextEncoder();
+  const keyMat   = await crypto.subtle.importKey(
+    'raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:PBKDF2_ITERS, hash:PBKDF2_HASH },
+    keyMat,
+    { name:'AES-GCM', length:256 },
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+// Encrypt a plaintext string → base64 blob (salt + iv + ciphertext)
+async function encrypt(plaintext, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LEN));
+  const iv   = crypto.getRandomValues(new Uint8Array(IV_LEN));
+  const key  = await deriveKey(passphrase, salt);
+  const enc  = new TextEncoder();
+  const ct   = await crypto.subtle.encrypt(
+    { name:'AES-GCM', iv },
+    key,
+    enc.encode(plaintext)
+  );
+  // Pack: salt(16) + iv(12) + ciphertext(n)
+  const buf = new Uint8Array(SALT_LEN + IV_LEN + ct.byteLength);
+  buf.set(salt, 0);
+  buf.set(iv,   SALT_LEN);
+  buf.set(new Uint8Array(ct), SALT_LEN + IV_LEN);
+  return btoa(String.fromCharCode(...buf));
+}
+
+// Decrypt a base64 blob back to plaintext (throws if wrong passphrase)
+async function decrypt(b64, passphrase) {
+  const buf  = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+  const salt = buf.slice(0, SALT_LEN);
+  const iv   = buf.slice(SALT_LEN, SALT_LEN + IV_LEN);
+  const ct   = buf.slice(SALT_LEN + IV_LEN);
+  const key  = await deriveKey(passphrase, salt);
+  const pt   = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, ct);
+  return new TextDecoder().decode(pt);
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  LOCK / UNLOCK STATE                                         ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let sessionPassphrase = null;   // in-memory only, never stored
+let isFirstSetup      = false;
+const AUTO_LOCK_SECS  = 300;    // 5 minutes
+let lockCountdown     = AUTO_LOCK_SECS;
+let lockInterval      = null;
+let activityTimer     = null;
+
+const STORAGE_KEYS = {
+  encToken:  'inkwell_enc_token',
+  cfgPublic: 'inkwell_cfg_pub',   // username, repo, branch, path (not secret)
+  hint:      'inkwell_hint',
+  db:        'inkwell_db',
+  verifier:  'inkwell_verifier',  // encrypted known string to verify passphrase
+};
+
+const VERIFIER_PLAIN = 'inkwell_ok_v1'; // sentinel we encrypt to verify passphrase
+
+async function initLockScreen() {
+  const hasToken = !!localStorage.getItem(STORAGE_KEYS.encToken);
+  const hint     = localStorage.getItem(STORAGE_KEYS.hint) || '';
+
+  if (hasToken) {
+    // Returning user — show unlock UI
+    isFirstSetup = false;
+    document.getElementById('lock-sub-text').textContent = 'Enter your passphrase to unlock your notes.';
+    document.getElementById('lock-field-label').textContent = 'Passphrase';
+    document.getElementById('lock-submit-btn').textContent = 'Unlock';
+    document.getElementById('lock-alt-btn').textContent = 'Forgot passphrase? Reset everything';
+    document.getElementById('hint-field-wrap').style.display = 'none';
+    if (hint) {
+      document.getElementById('lock-hint-display').textContent = '💡 Hint: ' + hint;
+    }
+  } else {
+    // First time — show setup UI
+    isFirstSetup = true;
+    document.getElementById('lock-sub-text').textContent = 'Choose a passphrase to encrypt your GitHub token. You\'ll need it every time you open the app.';
+    document.getElementById('lock-field-label').textContent = 'New Passphrase';
+    document.getElementById('lock-submit-btn').textContent = 'Create & Unlock';
+    document.getElementById('lock-or-divider').style.display = 'none';
+    document.getElementById('lock-alt-btn').style.display = 'none';
+    document.getElementById('hint-field-wrap').style.display = 'block';
+  }
+
+  document.getElementById('lock-input').focus();
+}
+
+async function handleLockSubmit() {
+  const pass = document.getElementById('lock-input').value;
+  if (!pass || pass.length < 4) {
+    lockErr('Passphrase must be at least 4 characters.'); return;
+  }
+
+  const btn = document.getElementById('lock-submit-btn');
+  btn.disabled = true;
+  btn.textContent = isFirstSetup ? 'Setting up…' : 'Unlocking…';
+
+  if (isFirstSetup) {
+    await setupFirstTime(pass);
+  } else {
+    await attemptUnlock(pass);
+  }
+
+  btn.disabled = false;
+  btn.textContent = isFirstSetup ? 'Create & Unlock' : 'Unlock';
+}
+
+async function setupFirstTime(pass) {
+  try {
+    // Store encrypted verifier so we can check passphrase later
+    const encVerifier = await encrypt(VERIFIER_PLAIN, pass);
+    localStorage.setItem(STORAGE_KEYS.verifier, encVerifier);
+
+    // Save optional hint
+    const hint = document.getElementById('lock-hint-input')?.value?.trim() || '';
+    if (hint) localStorage.setItem(STORAGE_KEYS.hint, hint);
+
+    sessionPassphrase = pass;
+    await enterApp();
+    openSettings(); // prompt to add token
+    toast('🔒 Passphrase set. Now add your GitHub token in Config.', 'info');
+  } catch(e) {
+    lockErr('Setup failed: ' + e.message);
+  }
+}
+
+async function attemptUnlock(pass) {
+  const encVerifier = localStorage.getItem(STORAGE_KEYS.verifier);
+  if (!encVerifier) {
+    // Legacy: no verifier stored yet — try decrypting the token directly
+    const encToken = localStorage.getItem(STORAGE_KEYS.encToken);
+    if (!encToken) { sessionPassphrase = pass; await enterApp(); return; }
+    try {
+      await decrypt(encToken, pass); // will throw if wrong
+      sessionPassphrase = pass;
+      await enterApp();
+    } catch {
+      lockErr('Wrong passphrase. Try again.');
+    }
+    return;
+  }
+  try {
+    const result = await decrypt(encVerifier, pass);
+    if (result !== VERIFIER_PLAIN) { lockErr('Wrong passphrase. Try again.'); return; }
+    sessionPassphrase = pass;
+    await enterApp();
+  } catch {
+    lockErr('Wrong passphrase. Try again.');
+    document.getElementById('lock-input').classList.add('err');
+    setTimeout(()=>document.getElementById('lock-input').classList.remove('err'), 400);
+  }
+}
+
+async function enterApp() {
+  // Load encrypted token into cfg
+  await loadCfgFromStorage();
+  loadLocalDB();
+  renderNotebooks();
+  renderNotesList();
+
+  document.getElementById('lock-screen').classList.add('hidden');
+  const appEl = document.getElementById('app');
+  appEl.classList.add('visible');
 
   if (cfg.token && cfg.user && cfg.repo) {
     await syncFromGitHub();
   } else {
-    setSyncStatus('warn','Not configured — click Config');
-    openSettings();
+    setSyncStatus('warn', 'Not configured — click Config');
   }
-  setInterval(silentPull, 45000);
-});
 
-// ── CONFIG ─────────────────────────────────────────────
-function loadConfig() { try { cfg = JSON.parse(localStorage.getItem('inkwell_cfg')||'{}'); } catch { cfg={}; } }
+  startAutoLockTimer();
+  setInterval(silentPull, 45000);
+}
+
+function lockApp() {
+  // Wipe session key from memory
+  sessionPassphrase = null;
+  cfg = {};
+  clearInterval(lockInterval);
+  clearTimeout(activityTimer);
+
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('lock-screen').classList.remove('hidden');
+  document.getElementById('lock-input').value = '';
+  document.getElementById('lock-err').textContent = '';
+  document.getElementById('lock-input').focus();
+  isFirstSetup = false;
+
+  // Reset lock button text
+  document.getElementById('lock-submit-btn').textContent = 'Unlock';
+  document.getElementById('lock-alt-btn').textContent = 'Forgot passphrase? Reset everything';
+  document.getElementById('lock-or-divider').style.display = '';
+  document.getElementById('lock-alt-btn').style.display = '';
+}
+
+function handleLockAlt() {
+  if (!isFirstSetup) {
+    if (confirm('⚠ This will permanently delete your encrypted token and all locally cached notes. Your actual notes.json on GitHub will NOT be deleted. Continue?')) {
+      localStorage.removeItem(STORAGE_KEYS.encToken);
+      localStorage.removeItem(STORAGE_KEYS.verifier);
+      localStorage.removeItem(STORAGE_KEYS.hint);
+      localStorage.removeItem(STORAGE_KEYS.cfgPublic);
+      localStorage.removeItem(STORAGE_KEYS.db);
+      location.reload();
+    }
+  }
+}
+
+function lockErr(msg) {
+  document.getElementById('lock-err').textContent = msg;
+}
+function clearLockErr() {
+  document.getElementById('lock-err').textContent = '';
+}
+function toggleLockEye() {
+  const inp = document.getElementById('lock-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('lock-eye').textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+// ── AUTO-LOCK TIMER ───────────────────────────────────────────
+function startAutoLockTimer() {
+  lockCountdown = AUTO_LOCK_SECS;
+  clearInterval(lockInterval);
+  lockInterval = setInterval(tickLock, 1000);
+  resetActivity();
+  // reset on user activity
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(ev =>
+    document.addEventListener(ev, resetActivity, { passive:true })
+  );
+}
+
+function resetActivity() {
+  lockCountdown = AUTO_LOCK_SECS;
+  updateLockTimerUI();
+}
+
+function tickLock() {
+  lockCountdown--;
+  updateLockTimerUI();
+  if (lockCountdown <= 0) {
+    clearInterval(lockInterval);
+    toast('🔒 Auto-locked after inactivity', 'warn');
+    setTimeout(lockApp, 400);
+  }
+}
+
+function updateLockTimerUI() {
+  const m = Math.floor(lockCountdown / 60);
+  const s = String(lockCountdown % 60).padStart(2,'0');
+  document.getElementById('lock-timer-text').textContent = `Locks in ${m}:${s}`;
+  const pct = (lockCountdown / AUTO_LOCK_SECS) * 100;
+  document.getElementById('lock-timer-bar').style.width = pct + '%';
+  // Change colour when close to locking
+  const bar = document.getElementById('lock-timer-bar');
+  bar.style.background = lockCountdown < 30 ? 'var(--danger)' : lockCountdown < 60 ? 'var(--warn)' : 'var(--accent)';
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ENCRYPTED CONFIG STORAGE                                    ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let cfg = {};
+
+async function loadCfgFromStorage() {
+  // Load public (non-secret) config fields
+  try {
+    const pub = JSON.parse(localStorage.getItem(STORAGE_KEYS.cfgPublic) || '{}');
+    cfg = { user: pub.user||'', repo: pub.repo||'', branch: pub.branch||'main', path: pub.path||'notes.json' };
+  } catch { cfg = {}; }
+
+  // Decrypt token from encrypted storage
+  const encToken = localStorage.getItem(STORAGE_KEYS.encToken);
+  if (encToken && sessionPassphrase) {
+    try {
+      cfg.token = await decrypt(encToken, sessionPassphrase);
+    } catch {
+      cfg.token = null;
+      toast('Could not decrypt token — passphrase mismatch?', 'err');
+    }
+  }
+}
+
+async function saveCfgToStorage(tokenPlain) {
+  // Save non-secret fields in plaintext
+  const pub = { user: cfg.user, repo: cfg.repo, branch: cfg.branch, path: cfg.path };
+  localStorage.setItem(STORAGE_KEYS.cfgPublic, JSON.stringify(pub));
+
+  // Encrypt the token
+  if (tokenPlain && sessionPassphrase) {
+    const enc = await encrypt(tokenPlain, sessionPassphrase);
+    localStorage.setItem(STORAGE_KEYS.encToken, enc);
+  }
+}
+
+// ══ Settings UI ═══════════════════════════════════════════════
 function openSettings() {
-  ['user','repo','branch','token','path'].forEach(k => {
-    const el = document.getElementById('cfg-'+k);
-    if(el) el.value = cfg[k] || (k==='branch'?'main':k==='path'?'notes.json':'');
-  });
+  document.getElementById('cfg-user').value   = cfg.user   || '';
+  document.getElementById('cfg-repo').value   = cfg.repo   || '';
+  document.getElementById('cfg-branch').value = cfg.branch || 'main';
+  document.getElementById('cfg-path').value   = cfg.path   || 'notes.json';
+  document.getElementById('cfg-token').value  = ''; // never pre-fill token
   const r = document.getElementById('token-test-result');
   r.style.display='none'; r.className='';
   document.getElementById('settings-modal').classList.remove('hidden');
 }
 function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
-function saveSettings() {
-  const u=v('cfg-user'),r=v('cfg-repo'),t=v('cfg-token');
-  if(!u||!r||!t) { showTestResult('err','⚠ Username, repo name and token are all required.'); return; }
-  cfg = { user:u, repo:r, branch:v('cfg-branch')||'main', token:t, path:v('cfg-path')||'notes.json' };
-  localStorage.setItem('inkwell_cfg', JSON.stringify(cfg));
-  closeSettings(); ghFileSha=null;
-  toast('Config saved — syncing now…','info');
+
+async function saveSettings() {
+  const u = v('cfg-user'), r = v('cfg-repo'), t = v('cfg-token');
+  if (!u || !r) { showTestResult('err','⚠ Username and repo name are required.'); return; }
+
+  cfg.user   = u;
+  cfg.repo   = r;
+  cfg.branch = v('cfg-branch') || 'main';
+  cfg.path   = v('cfg-path')   || 'notes.json';
+
+  if (t) {
+    cfg.token = t; // update in-memory
+    await saveCfgToStorage(t);
+    toast('🔐 Token encrypted & saved', 'ok');
+  } else {
+    await saveCfgToStorage(cfg.token); // re-encrypt existing token with current passphrase
+  }
+
+  closeSettings();
+  ghFileSha = null;
   syncFromGitHub();
 }
-function v(id) { return document.getElementById(id).value.trim(); }
 
-// ── TOKEN TESTER ───────────────────────────────────────
+// ══ Token tester ══════════════════════════════════════════════
 async function testToken() {
-  const user=v('cfg-user'), repo=v('cfg-repo'), token=v('cfg-token');
-  if(!token){ showTestResult('err','⚠ Paste your token first.'); return; }
-  if(!user||!repo){ showTestResult('err','⚠ Fill in username and repo name too.'); return; }
+  const user = v('cfg-user'), repo = v('cfg-repo'), token = v('cfg-token');
+  if (!token) { showTestResult('err','⚠ Enter a token to test first.'); return; }
+  if (!user || !repo) { showTestResult('err','⚠ Fill in username and repo too.'); return; }
   showTestResult('warn','⏳ Testing connection…');
   try {
-    // 1. Check token validity
     const meRes = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+      headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}
     });
-    if(meRes.status===401){
-      showTestResult('err','✕ <strong>Invalid token</strong> (401). The token may be expired or miscopied. Please regenerate it at github.com/settings/tokens and paste the new one.');
-      return;
-    }
+    if (meRes.status===401) { showTestResult('err','✕ Invalid token (401). Regenerate at github.com/settings/tokens.'); return; }
     const me = await meRes.json();
-    if(!me.login){ showTestResult('err','✕ Could not verify token — unexpected response from GitHub.'); return; }
-
-    // 2. Check repo access
+    if (!me.login) { showTestResult('err','✕ Unexpected response from GitHub.'); return; }
     const repoRes = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
-      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+      headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}
     });
-    if(repoRes.status===404){
-      showTestResult('err',`✕ <strong>Repo not found</strong>: "${user}/${repo}". Check the spelling. If the repo is private, make sure the token has the <strong>repo</strong> scope (not just public_repo).`);
-      return;
-    }
-    if(repoRes.status===403||repoRes.status===401){
-      showTestResult('err',`✕ <strong>Permission denied</strong> for "${user}/${repo}". Regenerate your token and check the <strong>repo</strong> checkbox (all sub-boxes). For a private repo you need the full "repo" scope.`);
-      return;
-    }
+    if (repoRes.status===404) { showTestResult('err',`✕ Repo "${user}/${repo}" not found. Check spelling or token scope.`); return; }
+    if (repoRes.status===403||repoRes.status===401) { showTestResult('err',`✕ Permission denied. Regenerate with full <strong>repo</strong> scope.`); return; }
     const repoData = await repoRes.json();
-    const canPush = repoData.permissions ? repoData.permissions.push : true;
-    if(!canPush){
-      showTestResult('warn',`⚠ Authenticated as <strong>${me.login}</strong> and repo found, but this token appears to be <strong>read-only</strong>. Regenerate with the full <strong>repo</strong> scope to enable writing.`);
-      return;
-    }
-    showTestResult('ok',`✓ All good! Authenticated as <strong>${me.login}</strong>. Repo <strong>${repoData.full_name}</strong> is accessible with write permission. Click <strong>Save & Sync</strong>.`);
-  } catch(e) {
-    showTestResult('err','✕ Network error — check your internet connection. '+e.message);
-  }
+    const canPush  = repoData.permissions ? repoData.permissions.push : true;
+    if (!canPush) { showTestResult('warn',`⚠ Authenticated as <strong>${me.login}</strong> but token is read-only. Regenerate with full repo scope.`); return; }
+    showTestResult('ok',`✓ Authenticated as <strong>${me.login}</strong>. Repo <strong>${repoData.full_name}</strong> has write access. Click Save & Sync.`);
+  } catch(e) { showTestResult('err','✕ Network error: ' + e.message); }
 }
-
 function showTestResult(type, html) {
   const el = document.getElementById('token-test-result');
   el.className=type; el.innerHTML=html; el.style.display='block';
 }
 
-// ── GITHUB API ─────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  GITHUB API                                                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 const ghHeaders = () => ({
   'Authorization': `token ${cfg.token}`,
-  'Accept': 'application/vnd.github.v3+json',
-  'Content-Type': 'application/json',
+  'Accept':        'application/vnd.github.v3+json',
+  'Content-Type':  'application/json',
 });
 const ghUrl = () => `https://api.github.com/repos/${cfg.user}/${cfg.repo}/contents/${cfg.path||'notes.json'}`;
 
 async function ghGet() {
   const res = await fetch(ghUrl(), { headers: ghHeaders() });
-  if(res.status===404) return {notFound:true};
-  if(!res.ok) {
+  if (res.status===404) return {notFound:true};
+  if (!res.ok) {
     const b = await res.json().catch(()=>({}));
-    let hint = '';
-    if(res.status===401) hint=' — Token is invalid or expired. Regenerate it.';
-    else if(res.status===403) hint=' — Token lacks write permission. Regenerate with full "repo" scope.';
+    const hint = res.status===401?' — Token invalid/expired.':res.status===403?' — Token lacks write permission (need full repo scope).':'';
     throw new Error(`GitHub ${res.status}: ${b.message||'Error'}${hint}`);
   }
   return res.json();
@@ -458,58 +844,55 @@ async function ghGet() {
 
 async function ghPut(content, sha, message) {
   const body = { message, content, branch: cfg.branch||'main' };
-  if(sha) body.sha = sha;
+  if (sha) body.sha = sha;
   const res = await fetch(ghUrl(), { method:'PUT', headers:ghHeaders(), body:JSON.stringify(body) });
-  if(!res.ok) {
+  if (!res.ok) {
     const b = await res.json().catch(()=>({}));
-    let hint = '';
-    if(res.status===401) hint=' — Token expired. Open Config and regenerate.';
-    else if(res.status===403) hint=' — Token does not have write access. Open Config → regenerate token with full "repo" scope checked.';
-    else if(res.status===409) hint=' — File conflict. Click Sync to fetch latest first.';
-    else if(res.status===422) hint=' — SHA mismatch. Click Sync to reset.';
+    const hint = res.status===403?' — Regenerate token with full repo scope.':res.status===409?' — Conflict: click Sync first.':res.status===422?' — SHA mismatch: click Sync.':'';
     throw new Error(`Save failed (${res.status}): ${b.message||'Error'}${hint}`);
   }
   return res.json();
 }
 
-// ── SYNC ───────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SYNC                                                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let ghFileSha = null;
+
 function setSyncStatus(state, label) {
   document.getElementById('sync-dot').className='sync-dot '+state;
   document.getElementById('sync-label').textContent=label;
 }
 
 async function syncFromGitHub() {
-  if(!cfg.token||!cfg.user||!cfg.repo){ setSyncStatus('warn','Not configured'); return; }
+  if (!cfg.token||!cfg.user||!cfg.repo) { setSyncStatus('warn','Not configured'); return; }
   setSyncStatus('syncing','Syncing…');
   try {
     const data = await ghGet();
-    if(data.notFound) {
+    if (data.notFound) {
       await pushToGitHub('Create notes.json');
       setSyncStatus('ok','Ready · '+timeAgo());
-      toast('✓ Created notes.json in your repo','ok'); return;
+      toast('✓ Created notes.json in repo','ok'); return;
     }
     ghFileSha = data.sha;
     const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
     db = { notebooks: remote.notebooks||[], notes: remote.notes||[] };
     saveLocalDB(); renderNotebooks(); renderNotesList();
-    if(currentNote) {
+    if (currentNote) {
       const n = getNote(currentNote);
-      if(n){ document.getElementById('note-title').value=n.title; document.getElementById('md-editor').value=n.content; updateWordCount(); }
+      if (n) { document.getElementById('note-title').value=n.title; document.getElementById('md-editor').value=n.content; updateWordCount(); }
       else { currentNote=null; showEditorEmpty(); }
     }
     setSyncStatus('ok','Synced · '+timeAgo());
-  } catch(e) {
-    setSyncStatus('err','Sync failed');
-    toast(e.message, 'err');
-    console.error(e);
-  }
+  } catch(e) { setSyncStatus('err','Sync failed'); toast(e.message,'err'); }
 }
 
 async function silentPull() {
-  if(!cfg.token||!cfg.user||!cfg.repo) return;
+  if (!cfg.token||!cfg.user||!cfg.repo||!sessionPassphrase) return;
   try {
     const data = await ghGet();
-    if(data.notFound||data.sha===ghFileSha) return;
+    if (data.notFound||data.sha===ghFileSha) return;
     ghFileSha = data.sha;
     const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
     db = { notebooks: remote.notebooks||[], notes: remote.notes||[] };
@@ -520,7 +903,7 @@ async function silentPull() {
 }
 
 async function pushToGitHub(msg) {
-  if(!cfg.token||!cfg.user||!cfg.repo) return;
+  if (!cfg.token||!cfg.user||!cfg.repo) return;
   setSyncStatus('syncing','Saving…');
   try {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(db,null,2))));
@@ -528,34 +911,41 @@ async function pushToGitHub(msg) {
     ghFileSha = res.content?.sha || ghFileSha;
     setSyncStatus('ok','Saved · '+timeAgo());
     setStatus('✓ saved'); setTimeout(()=>setStatus(''),2000);
-  } catch(e) {
-    setSyncStatus('err','Save failed');
-    toast(e.message,'err');
-    console.error(e);
-  }
+  } catch(e) { setSyncStatus('err','Save failed'); toast(e.message,'err'); }
 }
 
+let saveTimer = null;
 function scheduleSave() {
   setStatus('• unsaved'); clearTimeout(saveTimer);
-  if(!cfg.token) return;
+  if (!cfg.token) return;
   saveTimer = setTimeout(()=>pushToGitHub(), 2500);
 }
 
 async function manualSync() {
-  if(!cfg.token){ openSettings(); return; }
+  if (!cfg.token) { openSettings(); return; }
   await syncFromGitHub();
   toast('Sync complete','ok');
 }
 
-// ── LOCAL DB ───────────────────────────────────────────
-function loadLocalDB() { try { db=JSON.parse(localStorage.getItem('inkwell_db')||'{"notebooks":[],"notes":[]}'); } catch { db={notebooks:[],notes:[]}; } }
-function saveLocalDB() { localStorage.setItem('inkwell_db',JSON.stringify(db)); }
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  LOCAL DB                                                    ║
+// ╚══════════════════════════════════════════════════════════════╝
 
-// ── NOTEBOOKS ──────────────────────────────────────────
+let db = {notebooks:[],notes:[]};
+function loadLocalDB() { try { db=JSON.parse(localStorage.getItem(STORAGE_KEYS.db)||'{"notebooks":[],"notes":[]}'); } catch { db={notebooks:[],notes:[]}; } }
+function saveLocalDB() { localStorage.setItem(STORAGE_KEYS.db, JSON.stringify(db)); }
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  NOTEBOOKS                                                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let currentNotebook=null, currentNote=null, previewMode=false;
+const isMobile = () => window.innerWidth<=768;
+
 function addNotebook() {
   const nb={id:uid(),name:'Notebook',icon:randomIcon(),created:Date.now()};
   db.notebooks.push(nb); saveLocalDB(); renderNotebooks(); selectNotebook(nb.id); scheduleSave();
-  setTimeout(()=>{ const el=document.querySelector(`.notebook-item[data-id="${nb.id}"] .nb-name-input`); if(el){el.focus();el.select();} },80);
+  setTimeout(()=>{const el=document.querySelector(`.notebook-item[data-id="${nb.id}"] .nb-name-input`);if(el){el.focus();el.select();}},80);
 }
 function selectNotebook(id) {
   currentNotebook=id; currentNote=null;
@@ -563,7 +953,7 @@ function selectNotebook(id) {
   renderNotebooks(); renderNotesList(); showEditorEmpty();
   if(isMobile()) closeSidebar();
 }
-function getNotebook(id) { return db.notebooks.find(n=>n.id===id); }
+function getNotebook(id){return db.notebooks.find(n=>n.id===id);}
 function deleteNotebook(id) {
   if(!confirm('Delete this notebook and all its notes?')) return;
   db.notebooks=db.notebooks.filter(n=>n.id!==id);
@@ -579,7 +969,7 @@ function renameNotebook(id,name) {
 }
 function renderNotebooks() {
   const el=document.getElementById('notebooks-list');
-  if(!db.notebooks.length){ el.innerHTML=`<div style="padding:10px 20px;font-size:12px;color:var(--muted)">No notebooks yet</div>`; return; }
+  if(!db.notebooks.length){el.innerHTML=`<div style="padding:10px 20px;font-size:12px;color:var(--muted)">No notebooks yet</div>`;return;}
   el.innerHTML=db.notebooks.map(nb=>{
     const count=db.notes.filter(n=>n.notebookId===nb.id).length;
     const active=currentNotebook===nb.id?'active':'';
@@ -589,7 +979,7 @@ function renderNotebooks() {
         <input class="nb-name-input" value="${escHtml(nb.name)}"
           onclick="event.stopPropagation()" onfocus="event.stopPropagation()"
           onblur="renameNotebook('${nb.id}',this.value)"
-          onkeydown="if(event.key==='Enter')this.blur()" />
+          onkeydown="if(event.key==='Enter')this.blur()"/>
         <div class="nb-count">${count} note${count!==1?'s':''}</div>
       </div>
       <button class="nb-del" onclick="event.stopPropagation();deleteNotebook('${nb.id}')">✕</button>
@@ -597,7 +987,10 @@ function renderNotebooks() {
   }).join('');
 }
 
-// ── NOTES ──────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  NOTES                                                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 function createNote() {
   if(!currentNotebook){toast('Select a notebook first','info');return;}
   const note={id:uid(),notebookId:currentNotebook,title:'',content:'',created:Date.now(),updated:Date.now()};
@@ -614,7 +1007,7 @@ function selectNote(id) {
   updateWordCount(); renderNotesList();
   if(previewMode) updatePreview();
 }
-function getNote(id) { return db.notes.find(n=>n.id===id); }
+function getNote(id){return db.notes.find(n=>n.id===id);}
 function deleteNote() {
   if(!currentNote||!confirm('Delete this note?')) return;
   db.notes=db.notes.filter(n=>n.id!==currentNote);
@@ -633,8 +1026,8 @@ function renderNotesList() {
   if(!notes.length){el.innerHTML=`<div style="padding:20px 14px;font-size:12.5px;color:var(--muted);text-align:center">${search?'No results':'No notes yet'}</div>`;return;}
   el.innerHTML=notes.map((n,i)=>{
     const preview=n.content.replace(/[#*`>\-\[\]!]/g,'').trim().slice(0,60)||'Empty note';
-    const active=currentNote===n.id?'active':'';
-    return `<div class="note-card ${active}" style="animation-delay:${i*20}ms" onclick="selectNote('${n.id}');if(isMobile())showEditorMobile()">
+    return `<div class="note-card ${currentNote===n.id?'active':''}" style="animation-delay:${i*20}ms"
+      onclick="selectNote('${n.id}');if(isMobile())showEditorMobile()">
       <div class="note-card-title">${escHtml(n.title||'Untitled')}</div>
       <div class="note-card-preview">${escHtml(preview)}</div>
       <div class="note-card-date">${relDate(n.updated)}</div>
@@ -642,7 +1035,10 @@ function renderNotesList() {
   }).join('');
 }
 
-// ── EDITOR ─────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  EDITOR                                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 function onTitleChange() {
   const note=getNote(currentNote); if(!note) return;
   note.title=document.getElementById('note-title').value;
@@ -655,43 +1051,48 @@ function onContentChange() {
   if(previewMode) updatePreview();
   saveLocalDB(); renderNotesList(); scheduleSave();
 }
-function updatePreview() { document.getElementById('md-preview').innerHTML=marked.parse(document.getElementById('md-editor').value); }
+function updatePreview(){document.getElementById('md-preview').innerHTML=marked.parse(document.getElementById('md-editor').value);}
 function togglePreview() {
   previewMode=!previewMode;
-  const ed=document.getElementById('md-editor'), pv=document.getElementById('md-preview'), btn=document.getElementById('preview-btn');
+  const ed=document.getElementById('md-editor'),pv=document.getElementById('md-preview'),btn=document.getElementById('preview-btn');
   if(previewMode){updatePreview();ed.style.display='none';pv.classList.add('visible');btn.classList.add('active');}
   else{ed.style.display='';pv.classList.remove('visible');btn.classList.remove('active');ed.focus();}
 }
-function insertMd(before,after) {
+function insertMd(before,after){
   const ta=document.getElementById('md-editor'),s=ta.selectionStart,e=ta.selectionEnd;
   ta.setRangeText(before+ta.value.substring(s,e)+after,s,e,'select');
-  ta.focus(); onContentChange();
+  ta.focus();onContentChange();
 }
-function insertHeading() {
-  const ta=document.getElementById('md-editor');
-  const ls=ta.value.lastIndexOf('\n',ta.selectionStart-1)+1;
-  ta.setRangeText('## ',ls,ls,'end'); ta.focus(); onContentChange();
+function insertHeading(){
+  const ta=document.getElementById('md-editor'),ls=ta.value.lastIndexOf('\n',ta.selectionStart-1)+1;
+  ta.setRangeText('## ',ls,ls,'end');ta.focus();onContentChange();
 }
-function updateWordCount() {
-  const txt=document.getElementById('md-editor').value;
-  const w=txt.trim()?txt.trim().split(/\s+/).length:0;
+function updateWordCount(){
+  const txt=document.getElementById('md-editor').value,w=txt.trim()?txt.trim().split(/\s+/).length:0;
   document.getElementById('wc-words').textContent=w+' word'+(w!==1?'s':'');
   document.getElementById('wc-chars').textContent=txt.length+' chars';
 }
 function setStatus(s){document.getElementById('save-status').textContent=s;}
 
-// ── MOBILE ─────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  MOBILE                                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
 function showEditorMobile(){document.getElementById('notes-panel').classList.add('hidden-mobile');document.getElementById('editor-area').classList.remove('hidden-mobile');}
 
-// ── HELPERS ────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  HELPERS                                                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 const ICONS=['📓','📔','📒','📕','📗','📘','📙','🗒','✏️','💡','🔬','🎨','🌿','🚀','💼','🏠','🎵','📐','🌍','⚡','🧠','🗺'];
 function randomIcon(){return ICONS[Math.floor(Math.random()*ICONS.length)];}
 function relDate(ts){const d=Date.now()-ts;if(d<60000)return 'Just now';if(d<3600000)return Math.floor(d/60000)+'m ago';if(d<86400000)return Math.floor(d/3600000)+'h ago';return new Date(ts).toLocaleDateString();}
 function timeAgo(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function v(id){return document.getElementById(id).value.trim();}
 function toast(msg,type='info'){
   const icons={ok:'✓',err:'✕',info:'·',warn:'⚠'};
   const c=document.getElementById('toast-container'),t=document.createElement('div');
@@ -700,6 +1101,20 @@ function toast(msg,type='info'){
   c.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(8px)';setTimeout(()=>t.remove(),350);},5000);
 }
+
+// ── BOOT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Add mobile back button
+  const toolbar=document.querySelector('.editor-toolbar');
+  const backBtn=document.createElement('button');
+  backBtn.className='tb-btn';backBtn.innerHTML='‹';
+  backBtn.onclick=()=>{document.getElementById('notes-panel').classList.remove('hidden-mobile');document.getElementById('editor-area').classList.add('hidden-mobile');};
+  toolbar.prepend(backBtn);
+  const checkMobile=()=>{backBtn.style.display=isMobile()?'':'none';};
+  window.addEventListener('resize',checkMobile);checkMobile();
+
+  initLockScreen();
+});
 </script>
 </body>
 </html>
