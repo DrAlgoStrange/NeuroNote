@@ -1,4 +1,20 @@
 {
-  "notebooks": [],
-  "notes": []
+  "notebooks": [
+    {
+      "id": "mlqh0vnm01tj9",
+      "name": "SAP Trial passwords",
+      "icon": "🧠",
+      "created": 1771324754242
+    }
+  ],
+  "notes": [
+    {
+      "id": "mlqh18j55za95",
+      "notebookId": "mlqh0vnm01tj9",
+      "title": "",
+      "content": "",
+      "created": 1771324770929,
+      "updated": 1771324770929
+    }
+  ]
 }
