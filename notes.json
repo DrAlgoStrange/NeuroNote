@@ -1,4 +1,11 @@
 {
-  "notebooks": [],
+  "notebooks": [
+    {
+      "id": "mlqgwu6rzu8ju",
+      "name": "Notebook",
+      "icon": "⚡",
+      "created": 1771324565715
+    }
+  ],
   "notes": []
 }
